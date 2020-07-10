@@ -6,22 +6,23 @@ from datetime import timedelta
 from calendar import mdays
 from Secrets import spotify_token, spotify_user_id
 
-"""
-When script is run, it looks for a "New" playlist,
-if it doesn't exists then it makes a new one, else it renames it to the month and year
-and creates a new "New" playlist 
-"""
-
 class NewPlaylistUpdater:
 
     def __init__(self):
-        pass
+        # String representations of playlists
+        self.playlist_date = PlaylistDate()
 
     def update_new_playlist(self):
+
         # Step 1: Check if "New" playlist already exixts
-        if (check_new_playlist):
+        playlist_id = self.check_new_playlist()
+        
+        if (playlist_id is not None):
+            # if it does, rename it
+            self.rename_new_playlist(playlist_id)
 
-
+        # Step 2: Make a new "New" playlist
+        self.create_new_playlist()
 
 
 
@@ -38,20 +39,18 @@ class NewPlaylistUpdater:
         for playlist in response_json:
             if playlist['name'].lower() == 'new':
                 return playlist['id']
-                self.rename_new_playlist(playlist['id'])
-                break
 
-        self.create_new_playlist()        
+        return None
 
     def create_new_playlist(self):
 
         query = f"https://api.spotify.com/v1/users/{spotify_user_id}/playlists"
 
-        curent_month = self.monthToString(self.get_current_month())
+        date = self.playlist_date.new_playlist_month
 
         request_body = json.dumps({
             "name": "New",
-            "description": f"New Songs for {curent_month}",
+            "description": f"New Songs for {date}",
             "public": True
         })
 
@@ -65,11 +64,11 @@ class NewPlaylistUpdater:
 
         query = f"https://api.spotify.com/v1/playlists/{playlist_id}"
 
-        current_date = self.monthToString(self.get_current_month())
+        date = self.playlist_date.renamed_playlist_month
 
         request_body = json.dumps({
-            "name": f"{current_date}",
-            "description": f"Memories from {current_date}",
+            "name": f"{date}",
+            "description": f"Memories from {date}",
         })
         
         response = requests.put(query, headers={
@@ -79,27 +78,40 @@ class NewPlaylistUpdater:
 
    
 
-class Date:
+class PlaylistDate:
 
-    def __init__:
-        self.current_date = self.get_current_month()
+    def __init__(self):
+        self.new_playlist_month = self.get_new_playlist_date()
+        self.renamed_playlist_month = self.get_renamed_playlist_date()
 
-     def get_current_month(self):
+    def get_current_month(self):
         current_date = datetime.datetime.now()
         return current_date
 
     def get_next_month(self):
         current_date = self.get_current_month()
         next_month = current_date + timedelta(mdays[current_date.month])
-        print(self.monthToString(next_month))
         return next_month
+
+    def get_prev_month(self):
+        current_date = self.get_current_month()
+        prev_month = current_date - timedelta(mdays[current_date.month])
+        return prev_month
 
     def monthToString(self, date):
         date_str = date.strftime("%B %Y")
         return date_str
-        
+
+    def get_new_playlist_date(self):
+        return self.monthToString(self.get_current_month())
+
+    def get_renamed_playlist_date(self):
+        return self.monthToString(self.get_prev_month())
 
 
+    
+
+    
 if __name__ == "__main__":
-    cp = CreatePlaylist()
-    cp.check_new_playlist()
+    npu = NewPlaylistUpdater()
+    npu.update_new_playlist()
